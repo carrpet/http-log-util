@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -39,7 +40,6 @@ func Execute() {
 }
 
 func init() {
-	//os.
 
 }
 
@@ -67,62 +67,93 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	csvReader := csv.NewReader(filereader)
-	rec, err := csvReader.Read()
+	_, err = csvReader.Read()
+
+	//TODO: validate that the columns are in the expected order
 	if err != nil {
-		panic(err)
+		return err
 	}
 	buf := make([][]string, bufSize)
-	i := 0
-	for rec != nil {
-		fmt.Printf("Reading record: %s\n", rec)
-		rec, err = csvReader.Read()
-		if err != nil {
+	for {
+		read, err := readChunk(csvReader, buf)
+		if err == io.EOF {
 			break
-			//panic(err)
-		}
-		minTimestamp, _ := strconv.Atoi(rec[3])
-		maxTimestamp := minTimestamp
-		// read in 2 minutes worth of data into buf
-		for maxTimestamp < minTimestamp+121 {
-			thisData, err := csvReader.Read()
-			if err != nil {
-				panic(err)
-			}
-			buf[i] = thisData
-			tsStr, _ := strconv.Atoi(buf[i][3])
-			if tsStr < minTimestamp {
-				minTimestamp = tsStr
-			} else {
-				maxTimestamp = tsStr
-			}
-			i++
+		} else if err != nil {
+			return err
 		}
 
-		// the  data in 10 second chunks
-		startPtr := 0
-		endPtr := 0
+		for i := 0; i < read; {
+			data, _ := parseChunk(10, buf, read, i)
 
-		for endPtr < i {
-			chunkTimestamp := minTimestamp
-			for chunkTimestamp < minTimestamp+11 {
-				thisStr, _ := strconv.Atoi(buf[endPtr][3])
-				if thisStr < minTimestamp {
-					minTimestamp = thisStr
-				} else {
-					chunkTimestamp = thisStr
-				}
-				endPtr++
-			}
+			//process the data here
+			i = i + len(data)
+		}
 
-			// now process the slice of data
-			most_hits(buf[startPtr:endPtr])
+	}
 
-			//write the data
+	return nil
+}
 
-			startPtr = endPtr
-			minTimestamp, err = strconv.Atoi(buf[endPtr][3])
+// returns the number of items read
+func readChunk(from *csv.Reader, buf [][]string) (int, error) {
 
+	i := 0
+	rec, err := from.Read()
+	if err != nil {
+		return 0, err
+	}
+	buf[i] = rec
+	minTimestamp, _ := strconv.Atoi(buf[i][3])
+	maxTimestamp := minTimestamp
+
+	// read in 2 minutes worth of data into buf
+	for i = 1; maxTimestamp < minTimestamp+121 && i < len(buf); i++ {
+		buf[i], err = from.Read()
+		if err != nil {
+			return i, err
+		}
+		tsStr, _ := strconv.Atoi(buf[i][3])
+		if tsStr < minTimestamp {
+			minTimestamp = tsStr
+		} else {
+			maxTimestamp = tsStr
 		}
 	}
-	return nil
+	return i + 1, nil
+}
+
+// returns a slice that contains <seconds> seconds worth of data
+func parseChunk(seconds int, buf [][]string, size int, start int) ([][]string, error) {
+
+	minTimestamp, _ := strconv.Atoi(buf[start][3])
+	thisTimestamp := minTimestamp
+	i := start + 1
+	for ; thisTimestamp < minTimestamp+11 && i < size; i++ {
+		thisTimestamp, _ = strconv.Atoi(buf[i][3])
+		if thisTimestamp < minTimestamp {
+			minTimestamp = thisTimestamp
+		}
+	}
+	return buf[start:i], nil
+}
+
+func computeTopHits(httpTraffic [][]string) []string {
+	hits := map[string]int{}
+	for _, row := range httpTraffic {
+		req := row[4]
+		path := strings.Split(req, " ")
+		section := "/" + strings.SplitN(path[1], "/", 3)[1]
+		hits[section]++
+	}
+
+	//find the max hits section
+	maxHits := 0
+	var maxSection string
+	for sect, h := range hits {
+		if h > maxHits {
+			maxHits = h
+			maxSection = sect
+		}
+	}
+	return []string{maxSection, strconv.Itoa(maxHits)}
 }

@@ -27,6 +27,29 @@ func TestArgValidatorValidFileReturnsNoError(t *testing.T) {
 	if err != nil {
 		t.Errorf(
 			testErrMessage("Existing file returned error: "+err.Error(),
-				"argValidator returns nil", "argValidator returns err"))
+				"argValidator returns nil", "argValidator returns error"))
 	}
+}
+
+func TestComputeTopHitsReturnsCorrectData(t *testing.T) {
+	testdata := [][]string{
+		[]string{"10.0.0.2", "-", "apache", "1549573862", "GET /api/user/bleh/h HTTP/1.0", "200", "1234"},
+		[]string{"10.0.0.4", "-", "apache", "1549573861", "GET /api/user HTTP/1.0", "200", "1234"},
+		[]string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "500", "1136"},
+		[]string{"10.0.0.4", "-", "apache", "1549573862", "POST /api/help HTTP/1.0", "200", "1234"},
+		[]string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "200", "1234"},
+		[]string{"10.0.0.1", "-", "apache", "1549573862", "GET /report HTTP/1.0", "500", "1194"},
+	}
+	result := computeTopHits(testdata)
+	if result[0] != "/api" {
+		t.Errorf(
+			testErrMessage("Returned section was incorrect",
+				"section should be /api", fmt.Sprintf("section was: %s", result[0])))
+	}
+	if result[1] != "5" {
+		t.Errorf(
+			testErrMessage("Number of hits was incorrect", "hits should be 5",
+				fmt.Sprintf("Hits was %s", result[1])))
+	}
+
 }
