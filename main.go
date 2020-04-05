@@ -1,7 +1,7 @@
 package main
 
 import (
-	"main/httprequestutil/cmd"
+	"main/cmd"
 )
 
 func main() {
