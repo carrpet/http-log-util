@@ -56,7 +56,7 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	csvRows := newLogIntervalReader(filereader)
+	csvRows := newLogReader(filereader)
 	lStats := LogStat{
 		writeFunc:       computeTopHits,
 		intervalSeconds: 10,

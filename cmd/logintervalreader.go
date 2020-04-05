@@ -5,17 +5,17 @@ import (
 	"io"
 )
 
-type logIntervalReader struct {
+type logReader struct {
 	csvReader *csv.Reader
 }
 
-func newLogIntervalReader(log io.Reader) *logIntervalReader {
-	return &logIntervalReader{
+func newLogReader(log io.Reader) *logReader {
+	return &logReader{
 		csvReader: csv.NewReader(log),
 	}
 
 }
-func (l *logIntervalReader) rows() <-chan []string {
+func (l *logReader) rows() <-chan []string {
 	_, err := l.csvReader.Read()
 	if err != nil {
 		// TODO:do something with the errors other than returning

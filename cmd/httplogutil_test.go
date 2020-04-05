@@ -41,15 +41,17 @@ func TestComputeTopHitsReturnsCorrectData(t *testing.T) {
 		[]string{"10.0.0.1", "-", "apache", "1549573862", "GET /report HTTP/1.0", "500", "1194"},
 	}
 	result := computeTopHits(testdata)
-	if result[0] != "/api" {
+	topSection := result.topHits[0].section
+	topHitsCount := result.topHits[0].hits
+	if topSection != "/api" {
 		t.Errorf(
 			testErrMessage("Returned section was incorrect",
-				"section should be /api", fmt.Sprintf("section was: %s", result[0])))
+				"section should be /api", fmt.Sprintf("section was: %s", topSection)))
 	}
-	if result[1] != "5" {
+	if topHitsCount != "5" {
 		t.Errorf(
 			testErrMessage("Number of hits was incorrect", "hits should be 5",
-				fmt.Sprintf("Hits was %s", result[1])))
+				fmt.Sprintf("Hits was %s", topHitsCount)))
 	}
 
 }
