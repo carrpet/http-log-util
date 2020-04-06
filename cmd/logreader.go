@@ -9,32 +9,32 @@ type logReader struct {
 	csvReader *csv.Reader
 }
 
+type logItem struct {
+	row []string
+	err error
+}
+
 func newLogReader(log io.Reader) *logReader {
 	return &logReader{
 		csvReader: csv.NewReader(log),
 	}
 
 }
-func (l *logReader) rows() <-chan []string {
+func (l *logReader) rows(out chan<- logItem) {
 	_, err := l.csvReader.Read()
 	if err != nil {
-		// TODO:do something with the errors other than returning
-		return nil
-	}
-	out := make(chan []string)
-	go func() {
+		out <- logItem{row: nil, err: err}
+	} else {
 		for {
 			row, err := l.csvReader.Read()
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				//TODO: do something to indicate to the caller
-				// that some non EOF error happened
+				out <- logItem{row: nil, err: err}
 				break
 			}
 			out <- row
 		}
-		close(out)
-	}()
-	return out
+	}
+	close(out)
 }

@@ -51,20 +51,53 @@ func argValidator(cmd *cobra.Command, args []string) error {
 // metrics info
 func monitorCmd(cmd *cobra.Command, args []string) error {
 
+	// get the flags for the high alert threshold, default 10 requests per second
+	alertThresholdPerSec := 10
+
+	alertFrequencySec := 120
 	// open up log file for reading
 	filereader, err := os.Open(args[0])
 	if err != nil {
 		return err
 	}
+	rowChan := make(chan logItem, 10)
 	csvRows := newLogReader(filereader)
+	go csvRows.rows()
 	lStats := LogStat{
 		writeFunc:       computeTopHits,
 		intervalSeconds: 10,
 	}
 	statsChan := make(chan HttpStats)
-	go lStats.logStats(csvRows.rows(), statsChan)
+	requestVolChan := make(chan requestVolume)
+	go lStats.logStats(csvRows.rows(rowChan), statsChan, requestVolChan)
+	/*
 	for x := range statsChan {
 		x.Print()
+	}
+	*/
+
+	//handle averaging the Requests and writing the high low messages
+	// if there is >= 10 requests per second for two mins then print "high"
+	logDuration := 0
+	totalRequests := 0
+	highState := false
+
+	totalRequestThreshold := alertThresholdPerSec * alertFrequencySec 
+	for x := range requestVolChan {
+		logDuration = logDuration + x.interval
+		totalRequests = totalRequests + x.numRequests
+		if logDuration % 120 == 0 {
+			//trigger alert
+			if !highState && totalRequests >= totalRequestThreshold {
+				highState = true
+				fmt.Printf("High traffic generated an alert - hits = %d", totalRequests)
+			} else if highState && totalRequests < totalRequestThreshold {
+				highState = false
+				var recoverTime //TODO
+				fmt.Printf("The alert has recovered at time %s", recoverTime)
+			}
+			totalRequests = 0
+		}
 	}
 	return nil
 }
