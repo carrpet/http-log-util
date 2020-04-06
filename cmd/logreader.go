@@ -33,7 +33,7 @@ func (l *logReader) rows(out chan<- logItem) {
 				out <- logItem{row: nil, err: err}
 				break
 			}
-			out <- row
+			out <- logItem{row: row, err: nil}
 		}
 	}
 	close(out)

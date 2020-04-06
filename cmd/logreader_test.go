@@ -18,17 +18,21 @@ var (
 "10.0.0.4","-","a`
 )
 
-func chanHelper(data string) <-chan []string {
-	return newLogReader(strings.NewReader(data)).rows()
+func chanHelper(data string) *logReader {
+	return newLogReader(strings.NewReader(data))
 }
 
 func TestLogReaderProducesAllRowsNoHeader(t *testing.T) {
-	toTest := chanHelper(readerData)
+	lReader := chanHelper(readerData)
+	lChan := make(chan logItem)
+
+	// read in the rows to channel
+	go lReader.rows(lChan)
 	counter := 0
-	for x := range toTest {
-		fmt.Println(x)
+	for range lChan {
 		counter++
 	}
+
 	if counter != 4 {
 		t.Error(testErrMessage("LogReader produced incorrect number of rows",
 			"counter is 4",
@@ -37,10 +41,11 @@ func TestLogReaderProducesAllRowsNoHeader(t *testing.T) {
 }
 
 func TestLogReaderHandlesInvalidFile(t *testing.T) {
-	toTest := chanHelper(invalidFile)
+	lReader := chanHelper(invalidFile)
+	lChan := make(chan logItem)
+	go lReader.rows(lChan)
 	counter := 0
-	for x := range toTest {
-		fmt.Println(x)
+	for range lChan {
 		counter++
 	}
 	if counter != 2 {
