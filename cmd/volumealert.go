@@ -39,6 +39,15 @@ type requestVolume struct {
 	endTime     time.Time //indicates the end time for this interval
 }
 
+func (rv requestVolume) Error() bool {
+	return false
+
+}
+
+func (s HttpStats) Error() bool {
+	return false
+}
+
 type volumeAlertConfig struct {
 	alertThreshold int
 	alertFrequency int

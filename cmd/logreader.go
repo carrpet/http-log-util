@@ -14,6 +14,10 @@ type logItem struct {
 	err error
 }
 
+func (li logItem) Error() bool {
+	return li.err != nil
+}
+
 func newLogReader(log io.Reader) *logReader {
 	return &logReader{
 		csvReader: csv.NewReader(log),
