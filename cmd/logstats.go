@@ -23,9 +23,7 @@ type Writable interface {
 	WriteLog()
 }
 type Transformable interface {
-	//Transform(func(Transformable) Errorable)
 	IteratorKey() (int, error)
-	//Transforms() func() Errorable
 }
 
 func (li logItem) IteratorKey() (int, error) {
@@ -87,50 +85,6 @@ type LogStat struct {
 	intervalSeconds int
 }
 
-//func (l *LogStat) lS(in <-chan logItem, write ...chan<- HttpStats)
-
-/*
-func (l *LogStat) logStats(in <-chan logItem, write chan<- HttpStats, out chan<- requestVolume) {
-
-	// read intervalSeconds worth of data from the channel
-	// process it with outFunc and writeFunc
-	var minTimestamp int
-	var data [][]string
-	for x := range in {
-		row := x.row
-		data = append(data, row)
-		if minTimestamp == 0 {
-			minTimestamp, _ = strconv.Atoi(row[3])
-		}
-		thisTimestamp, _ := strconv.Atoi(row[3])
-		if thisTimestamp < minTimestamp {
-			minTimestamp = thisTimestamp
-		}
-		if thisTimestamp > minTimestamp+l.intervalSeconds {
-			toWrite := l.writeFunc(data)
-			write <- toWrite
-			out <- requestVolume{numRequests: l.outFunc(data),
-				err: nil, endTime: time.Unix(int64(thisTimestamp), 0)}
-			minTimestamp = thisTimestamp
-			data = nil
-		}
-	}
-	close(write)
-	close(out)
-}
-*/
-
-/*
-func (l *LogStat) Transform(tFunc func ([][]string) Errorable, data [][]string) func(chan<-Errorable) {
-	// define a function to apply to transform
-	toTransform := data
-	return func (out chan<-Errorable) {
-		transformed := tFunc(toTransform)
-		out <- transformed
-	}
-}
-*/
-
 type LogItems []logItem
 
 type Sendable interface {
@@ -160,17 +114,9 @@ func logItemsfilter(fr FlowRegulator, in <-chan logItem, done chan<- interface{}
 	var buf LogItems
 	for x := range in {
 		buf = append(buf, x)
+		//TODO: handle error
 		it, _ := x.IteratorKey()
-		//TODO: handle iterator
-		/* this could be abstracted into getSequenceItem
-		row := x.row
-		data = append(data, row)
-		ts, err := strconv.Atoi(row[date])
-		if err != nil {
-			// TODO
-			fmt.Println("Error parsing data")
-		}
-		*/
+
 		iVal := processFunc(it)
 		if iVal == nil {
 			continue
