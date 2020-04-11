@@ -24,7 +24,7 @@ func chanHelper(data string) *logReader {
 
 func TestLogReaderProducesAllRowsNoHeader(t *testing.T) {
 	lReader := chanHelper(readerData)
-	lChan := make(chan logItem)
+	lChan := make(chan Iterable)
 
 	// read in the rows to channel
 	go lReader.rows(lChan)
@@ -42,7 +42,7 @@ func TestLogReaderProducesAllRowsNoHeader(t *testing.T) {
 
 func TestLogReaderHandlesInvalidFile(t *testing.T) {
 	lReader := chanHelper(invalidFile)
-	lChan := make(chan logItem)
+	lChan := make(chan Iterable)
 	go lReader.rows(lChan)
 	counter := 0
 	for range lChan {

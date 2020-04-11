@@ -39,6 +39,10 @@ type requestVolume struct {
 	endTime     time.Time //indicates the end time for this interval
 }
 
+func (rv requestVolume) IteratorKey() (int, error) {
+	return 0, nil
+}
+
 func (rv requestVolume) Error() bool {
 	return false
 

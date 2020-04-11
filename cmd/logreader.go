@@ -5,40 +5,51 @@ import (
 	"io"
 )
 
-type logReader struct {
+//logReader implements Source interface
+type csvLogSource struct {
 	csvReader *csv.Reader
 }
 
 type logItem struct {
 	row []string
-	err error
 }
 
 func (li logItem) Error() bool {
 	return li.err != nil
 }
 
-func newLogReader(log io.Reader) *logReader {
-	return &logReader{
+func newCsvLogSource(log io.Reader) *csvLogSource {
+	return &csvLogSource{
 		csvReader: csv.NewReader(log),
 	}
 
 }
-func (l *logReader) rows(out chan<- logItem) {
+
+type csvLogSourceParams struct {
+	outChan chan<- Payload
+	errChan chan<- error
+}
+
+func (p *csvLogSourceParams) Output() chan<- Payload { return p.outChan }
+
+func (p *csvLogSourceParams) Error() chan<- error { return p.errChan }
+
+func (l *csvLogSource) Data(s SourceParams) {
+
+	//expect to read the header
 	_, err := l.csvReader.Read()
 	if err != nil {
-		out <- logItem{row: nil, err: err}
+		s.Error() <- err
 	} else {
 		for {
 			row, err := l.csvReader.Read()
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				out <- logItem{row: nil, err: err}
+				s.Error() <- err
 				break
 			}
-			out <- logItem{row: row, err: nil}
+			s.Output() <- &logItem{row: row}
 		}
 	}
-	close(out)
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -50,46 +49,41 @@ func argValidator(cmd *cobra.Command, args []string) error {
 // metrics info
 func monitorCmd(cmd *cobra.Command, args []string) error {
 
-	// get the flags for the high alert threshold, default 10 requests per second
+	//TODO: get user configured alert params
 	//alertThresholdPerSec := 10
 	//alertFrequencySec := 120
+
+	// params to configure the log intervals
+	logIntervalSec := 10
 
 	// open up log file for reading
 	filereader, err := os.Open(args[0])
 	if err != nil {
 		return err
 	}
-	rowChan := make(chan logItem)
-	requestsChan := make(chan requestVolume)
-	statsChan := make(chan HttpStats)
 
-	csvRows := newLogReader(filereader)
-	doneChan := make(chan interface{})
-	go csvRows.rows(rowChan)
-	lf := LogFilter{interval: 10}
-	statsTForm := statsTransform{tFunc: computeHTTPStats, out: statsChan}
-	requestsTForm := requestVolumeTransform{tFunc: computeRequestVolume, out: requestsChan}
-	go logItemsfilter(lf, rowChan, doneChan, statsTForm, requestsTForm)
-	go func() {
-		for x := range statsChan {
-			fmt.Printf("Hits: %s for Section: %s\n", x.topHits[0].hits, x.topHits[0].section)
-		}
-	}()
-	go func() {
-		for y := range requestsChan {
-			fmt.Printf("Num Requests: %d for End Time: %s\n", y.numRequests, time.Time.String(y.endTime))
-		}
-	}()
+	// setup source and pass the params to it
+	logSource := newCsvLogSource(filereader)
+	// setup sink to be the log writers
 
-	//alertCfg := volumeAlertConfig{alertThreshold: alertThresholdPerSec,
+	//setup and start the pipeline using source as source
+	httpLogMonitor := newPipeline(newStage(newHttpStatsProcessor(), logIntervalSec))
+
+	httpLogMonitor.Start(logSource, nil)
 	//	alertFrequency: alertFrequencySec}
 	//alertCfg.requestVolumeAlert(requestVolChan, os.Stdout)
-	<-doneChan
 	return nil
 }
 
-// pipeline should contain a go channel that listens on a channel and
-// consumes 10 seconds worth of data
+func newHttpStatsProcessor() *httpStatsProcessor {
+	return &httpStatsProcessor{}
 
-// then another thing should listen on another channel from the first
-// thing and consume 2 minutes worth of data
+}
+
+func newRequestVolumeProcessor() {
+
+}
+
+func newAlertProcessor() {
+
+}

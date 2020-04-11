@@ -20,13 +20,13 @@ type Errorable interface {
 	Error() bool
 }
 type Writable interface {
-	WriteLog()
+	Write()
 }
-type Transformable interface {
+type Iterable interface {
 	IteratorKey() (int, error)
 }
 
-func (li logItem) IteratorKey() (int, error) {
+func (li *logItem) IteratorKey() (int, error) {
 	ts, err := strconv.Atoi(li.row[date])
 	if err != nil {
 		// TODO
@@ -36,8 +36,9 @@ func (li logItem) IteratorKey() (int, error) {
 
 }
 
+//FlowRegulator does something
 type FlowRegulator interface {
-	ProcessInterval(int) func(...int) *Interval
+	ProcessInterval() func(...int) bool
 }
 
 // LogFilter will implement FlowRegulator
@@ -53,13 +54,13 @@ type FilterConfig struct {
 	intervalSeconds int //how much data should be aggregated at a time
 }
 
-// expects a non-monotonically increasing
-// sequence and returns a struct with containing
-// the start and end
-
-func (lf LogFilter) ProcessInterval(start int) func(...int) *Interval {
+// ProcessInterval returns a function that when called
+// takes a sequence of non-monotonically increasing integers
+// and returns true if the number of arguments called equals or
+// exceeds the configured interval.
+func (lf LogFilter) ProcessInterval() func(...int) bool {
 	minTime := 0
-	return func(ints ...int) *Interval {
+	return func(ints ...int) bool {
 		for _, val := range ints {
 			if minTime == 0 {
 				minTime = val
@@ -68,63 +69,104 @@ func (lf LogFilter) ProcessInterval(start int) func(...int) *Interval {
 				minTime = val
 			}
 			if val > minTime+lf.interval {
-				result := &Interval{start: minTime, end: val}
 				minTime = 0
-				//data = nil
-				return result
+				return true
 			}
 		}
-		return nil
+		return false
 	}
-}
-
-type LogStat struct {
-	data            [][]string
-	writeFunc       func([][]string) HttpStats
-	outFunc         func([][]string) int
-	intervalSeconds int
 }
 
 type LogItems []logItem
 
-type Sendable interface {
-	SendTransformation(LogItems)
+/*
+type Transformable interface {
+	Transform() Iterable
+	TransformForWrite() Writable
 }
+*/
+/*
 type statsTransform struct {
-	tFunc func(LogItems) HttpStats
+	tFunc func([]Iterable) HttpStats
 	out   chan<- HttpStats
 }
 
-func (s statsTransform) SendTransformation(items LogItems) {
+func (s statsTransform) SendTransformation(items []Iterable) {
 	s.out <- s.tFunc(items)
 }
+*/
 
 type requestVolumeTransform struct {
 	tFunc func(LogItems) requestVolume
 	out   chan<- requestVolume
 }
 
-func (r requestVolumeTransform) SendTransformation(items LogItems) {
-	r.out <- r.tFunc(items)
+type alerts struct {
 }
 
-func logItemsfilter(fr FlowRegulator, in <-chan logItem, done chan<- interface{}, out ...Sendable) {
+type alertTransform struct {
+	tFunc func([]requestVolume) alerts
+	out   chan<- alerts
+}
 
-	processFunc := fr.ProcessInterval(0)
-	var buf LogItems
-	for x := range in {
+type stageConfig struct {
+	transformer    Transformer
+	writeTransform Transformer
+}
+
+func (s stageConfig) logItemsStage(fr FlowRegulator, done chan<- interface{}, p StageParams) {
+
+	processFunc := fr.ProcessInterval()
+	var buf []Payload
+	for x := range p.Input() {
 		buf = append(buf, x)
 		//TODO: handle error
 		it, _ := x.IteratorKey()
 
 		iVal := processFunc(it)
-		if iVal == nil {
+		if !iVal {
 			continue
 		}
-		for _, val := range out {
-			val.SendTransformation(buf)
+		result, err := s.transformer.Transform(buf)
+		if err != nil {
+			fmt.Errorf("Do something %s", err)
 		}
+		p.Output() <- result
 		buf = nil
 	}
 	done <- struct{}{}
+}
+
+type Transformable interface {
+	Transform() Transformable
+}
+
+type LIS struct {
+}
+
+func (l LIS) Transform() Transformable {
+
+}
+
+// takes a logItem, flowRegulator and outputs a Transformable collection
+func testFilter(fr FlowRegulator, in <-chan logItem, out chan<- Transformable) {
+
+	var items LogItems
+	for x := range in {
+		items = append(items, x)
+	}
+	out <- items.Transform()
+
+}
+
+type testTForm struct {
+	tForm func(LogItems) requestVolume
+	out   chan requestVolume
+}
+
+func (t testTForm) Transform(li LogItems) Transformable {
+	return t.tForm(li)
+}
+
+type httpStatsProcessor struct {
 }
