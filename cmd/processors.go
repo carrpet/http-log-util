@@ -1,13 +1,30 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
-	"strings"
 	"time"
 )
 
+type LogItems []logItem
+
+type logItem struct {
+	row []string
+}
+
+func (li *logItem) IteratorKey() (int, error) {
+	ts, err := strconv.Atoi(li.row[date])
+	if err != nil {
+		// TODO
+		fmt.Errorf("Error retrieving iterator key for logItem: %s", err.Error())
+	}
+	return ts, nil
+
+}
+
 //TransformForWrite computes the metrics for
 // writing to output.
+/*
 func (li LogItems) TransformForWrite() Writable {
 	hits := map[string]int{}
 	for _, val := range li {
@@ -28,17 +45,9 @@ func (li LogItems) TransformForWrite() Writable {
 	}
 	return HttpStats{topHits: []TopHitStat{{section: maxSection, hits: strconv.Itoa(maxHits)}}}
 }
+*/
 
-func (l *LogItems) Clone() Payload {
-	return nil
-}
-
-func (r *requestVolume) Clone() Payload {
-	return nil
-}
-
-func (l *logItem) Clone() Payload {
-	return nil
+type httpStatsProcessor struct {
 }
 
 // Transform converts the data to the form that is expected

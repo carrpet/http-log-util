@@ -32,6 +32,7 @@ func (p *Pipeline) Start(src Source, sink Sink) {
 		}()
 	}
 
+	// start source goroutine
 	go func() {
 
 		// There is only one SourceParam implementation here so we can use it
@@ -39,9 +40,9 @@ func (p *Pipeline) Start(src Source, sink Sink) {
 		src.Data(&csvLogSourceParams{outChan: stagesCh[0], errChan: errCh})
 		close(errCh)
 	}()
-}
 
-func newStage(proc Transformer, interval int) Stage {
-	return StageConfig{proc: proc, interval: interval}
-
+	//start sink goroutine
+	go func() {
+		sink.Write(&sinkParams{inChan: stagesCh[len(stagesCh)-1]})
+	}()
 }

@@ -6,28 +6,6 @@ import (
 	"time"
 )
 
-/*
-type DataSource interface
-	Read() interface{}
-
-
-type ChanDataSource <-chan interface{}
-
-func (ch *ChanDataSource) Read() interface{} {
-	return <- ch
-}
-
-// Console Logger represents a sink of data which can write to an output
-type ConsoleLogger interface
-	WriteLog(io.Writer)
-	RegisterSource()
-
-*/
-// requestVolume represents the number of requests
-// processed over the time interval (in seconds)
-// and err will be propagated if an error happened
-// upstream
-
 const (
 	highTrafficAlertMsg = "High traffic generated an alert - hits = %d"
 	alertRecoverMsg     = "The alert has recovered at time %s"

@@ -5,17 +5,20 @@ import (
 	"io"
 )
 
+// represents the fields of the log file
+const (
+	rh       = iota
+	rfc931   = iota
+	authuser = iota
+	date     = iota
+	req      = iota
+	status   = iota
+	numBytes = iota
+)
+
 //logReader implements Source interface
 type csvLogSource struct {
 	csvReader *csv.Reader
-}
-
-type logItem struct {
-	row []string
-}
-
-func (li logItem) Error() bool {
-	return li.err != nil
 }
 
 func newCsvLogSource(log io.Reader) *csvLogSource {
@@ -33,6 +36,12 @@ type csvLogSourceParams struct {
 func (p *csvLogSourceParams) Output() chan<- Payload { return p.outChan }
 
 func (p *csvLogSourceParams) Error() chan<- error { return p.errChan }
+
+type sinkParams struct {
+	inChan <-chan Payload
+}
+
+func (p *sinkParams) Input() <-chan Payload { return p.inChan }
 
 func (l *csvLogSource) Data(s SourceParams) {
 

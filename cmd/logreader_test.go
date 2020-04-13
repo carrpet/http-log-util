@@ -1,11 +1,5 @@
 package cmd
 
-import (
-	"fmt"
-	"strings"
-	"testing"
-)
-
 var (
 	readerData = `"remotehost","rfc931","authuser","date","request","status","bytes"
 "10.0.0.2","-","apache",1549573860,"GET /api/user HTTP/1.0",200,1234
@@ -18,10 +12,7 @@ var (
 "10.0.0.4","-","a`
 )
 
-func chanHelper(data string) *logReader {
-	return newLogReader(strings.NewReader(data))
-}
-
+/*
 func TestLogReaderProducesAllRowsNoHeader(t *testing.T) {
 	lReader := chanHelper(readerData)
 	lChan := make(chan Iterable)
@@ -53,3 +44,4 @@ func TestLogReaderHandlesInvalidFile(t *testing.T) {
 	}
 
 }
+*/

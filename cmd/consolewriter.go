@@ -35,8 +35,4 @@ func (hs HttpStats) Write() {
 
 func (cw *ConsoleWriter) Write(writeFrom <-chan HttpStats) {
 
-	for x := range writeFrom {
-		x.Print()
-	}
-
 }
