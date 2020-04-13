@@ -35,7 +35,7 @@ func (s StageConfig) Run(p StageParams) {
 	if buf != nil {
 		p.Output() <- s.proc.Transform(buf)
 	}
-	//TODO: maybe close the channel here?
+
 }
 
 // LogMonitorStageParams specifies the input, output, and error channels for the stage.

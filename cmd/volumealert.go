@@ -11,21 +11,6 @@ const (
 	alertRecoverMsg     = "The alert has recovered at time %s"
 )
 
-type requestVolume struct {
-	numRequests int
-	err         error
-	endTime     time.Time //indicates the end time for this interval
-}
-
-func (rv requestVolume) IteratorKey() (int, error) {
-	return 0, nil
-}
-
-func (rv requestVolume) Error() bool {
-	return false
-
-}
-
 func (s HttpStats) Error() bool {
 	return false
 }

@@ -50,8 +50,8 @@ func argValidator(cmd *cobra.Command, args []string) error {
 func monitorCmd(cmd *cobra.Command, args []string) error {
 
 	//TODO: get user configured alert params
-	//alertThresholdPerSec := 10
-	//alertFrequencySec := 120
+	alertThresholdPerSec := 10
+	alertFrequencySec := 120
 
 	// params to configure the log intervals
 	logIntervalSec := 10
@@ -67,7 +67,9 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	// setup sink to be the log writers
 
 	//setup and start the pipeline using source as source
-	httpLogMonitor := newPipeline(newStage(newHttpStatsProcessor(), logIntervalSec))
+	httpLogMonitor := newPipeline(
+		newStage(newRequestVolumeProcessor(), logIntervalSec),
+		newStage(newAlertOutputProcessor(alertThresholdPerSec), alertFrequencySec))
 
 	sinkCh, _ := httpLogMonitor.Start(logSource)
 
@@ -78,17 +80,4 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	//	alertFrequency: alertFrequencySec}
 	//alertCfg.requestVolumeAlert(requestVolChan, os.Stdout)
 	return nil
-}
-
-func newHttpStatsProcessor() *httpStatsProcessor {
-	return &httpStatsProcessor{}
-
-}
-
-func newRequestVolumeProcessor() {
-
-}
-
-func newAlertProcessor() {
-
 }

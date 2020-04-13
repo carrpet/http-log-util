@@ -6,11 +6,9 @@ import (
 	"testing"
 )
 
-var (
-	testErrMessage = func(msg, expected, actual string) string {
-		return fmt.Sprintf(msg+": "+"expected: %s, actual: %s", expected, actual)
-	}
-)
+var testErrMessage = func(msg, expected, actual string) string {
+	return fmt.Sprintf(msg+": "+"expected: %s, actual: %s", expected, actual)
+}
 
 type mockStage struct {
 	toAdd int
