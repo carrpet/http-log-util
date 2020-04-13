@@ -5,27 +5,6 @@ import (
 	"testing"
 )
 
-/*
-type mockFlowRegulator struct {
-	interval int
-}
-
-func (m mockFlowRegulator) ProcessInterval() func(...int) bool {
-
-	// return true after on every third argument
-	counter := 0
-	return func(num ...int) bool {
-		for range num {
-			counter++
-		}
-		if counter%m.interval == 0 {
-			return true
-		}
-		return false
-	}
-}
-
-*/
 type mockTransformer struct {
 }
 

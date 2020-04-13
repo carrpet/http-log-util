@@ -69,7 +69,12 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	//setup and start the pipeline using source as source
 	httpLogMonitor := newPipeline(newStage(newHttpStatsProcessor(), logIntervalSec))
 
-	httpLogMonitor.Start(logSource, nil)
+	sinkCh, _ := httpLogMonitor.Start(logSource)
+
+	for range sinkCh {
+		// TODO: handle the sink items here
+
+	}
 	//	alertFrequency: alertFrequencySec}
 	//alertCfg.requestVolumeAlert(requestVolChan, os.Stdout)
 	return nil
