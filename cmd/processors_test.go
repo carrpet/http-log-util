@@ -3,7 +3,6 @@ package cmd
 import (
 	"strconv"
 	"testing"
-	"time"
 )
 
 /*
@@ -42,17 +41,20 @@ func TestRequestVolumeProcessorTransformFunc(t *testing.T) {
 		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "200", "1234"}},
 		{row: []string{"10.0.0.1", "-", "apache", "1549573863", "GET /report HTTP/1.0", "500", "1194"}},
 	}
-	expectedTimeStr, _ := strconv.Atoi(testdata[5].row[date])
-	expected := requestVolume{numRequests: 6, endTime: time.Unix(int64(expectedTimeStr), 0)}
+	expectedTimeStart, _ := strconv.Atoi(testdata[0].row[date])
+	expectedTimeEnd, _ := strconv.Atoi(testdata[5].row[date])
+	timeStamp := timestamp{startTime: expectedTimeStart, endTime: expectedTimeEnd}
+	expected := requestVolume{numRequests: 6, ts: timeStamp}
 	rvProcessor := newRequestVolumeProcessor()
-	result := rvProcessor.transformFunc(testdata).(*requestVolume)
+	result := rvProcessor.transformFunc(testdata, timeStamp).(*requestVolume)
 	if result.numRequests != expected.numRequests {
 		t.Errorf(testErrMessage("RequestVolumeProcessor.transformFunc had wrong output",
 			"numRequests == "+strconv.Itoa(expected.numRequests), "numRequests == "+strconv.Itoa(result.numRequests)))
 	}
-	if result.endTime != expected.endTime {
+	if result.ts != expected.ts {
 		t.Errorf(testErrMessage("RequestVolumeProcessor.transformFunc had wrong output",
-			"endTime == "+expected.endTime.String(), "endTime == "+result.endTime.String()))
+			"startTime / endTime ==  "+strconv.Itoa(expected.ts.startTime)+"/"+strconv.Itoa(expected.ts.endTime),
+			"startTime / endTime ==  "+strconv.Itoa(result.ts.startTime)+"/"+strconv.Itoa(result.ts.endTime)))
 	}
 
 }

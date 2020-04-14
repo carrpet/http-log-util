@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 )
@@ -12,11 +11,33 @@ type logItem struct {
 	row []string
 }
 
+func getLogItemTime(l *logItem) (int, error) {
+	return strconv.Atoi(l.row[date])
+}
+
+func (l *logItem) StartTime() int {
+	result, _ := getLogItemTime(l)
+	return result
+}
+
+func (l *logItem) EndTime() int {
+	result, _ := getLogItemTime(l)
+	return result
+}
+
+type timestamp struct {
+	startTime int
+	endTime   int
+}
+
 type requestVolume struct {
 	numRequests int
-	err         error
-	endTime     time.Time //indicates the end time for this interval
+	ts          timestamp
 }
+
+func (r *requestVolume) StartTime() int { return r.ts.startTime }
+
+func (r *requestVolume) EndTime() int { return r.ts.endTime }
 
 // represents a state transition for volume alerts
 type volumeAlertTransition struct {
@@ -26,20 +47,6 @@ type volumeAlertTransition struct {
 
 type volumeAlerts struct {
 	alerts []volumeAlertTransition
-}
-
-func (rv requestVolume) IteratorKey() (int, error) {
-	return 0, nil
-}
-
-func (li *logItem) IteratorKey() (int, error) {
-	ts, err := strconv.Atoi(li.row[date])
-	if err != nil {
-		// TODO
-		fmt.Errorf("Error retrieving iterator key for logItem: %s", err.Error())
-	}
-	return ts, nil
-
 }
 
 //TransformForWrite computes the metrics for
@@ -88,7 +95,7 @@ func newAlertOutputProcessor(threshold, freq int) *alertOutputProcessor {
 }
 */
 type requestVolumeProcessor struct {
-	transformFunc func(logItems) Payload
+	transformFunc func(logItems, timestamp) Payload
 }
 
 func newRequestVolumeProcessor() *requestVolumeProcessor {
@@ -104,17 +111,13 @@ func (r requestVolumeFunc) Transform(p []Payload) Payload {
 
 // Transform counts the number of total requests in the interval.
 func (r *requestVolumeProcessor) Transform(p []Payload) Payload {
+	ts := timestamp{startTime: p[0].StartTime(), endTime: p[len(p)-1].EndTime()}
 	payload := convertToLogItems(p)
-	return r.transformFunc(payload)
+	return r.transformFunc(payload, ts)
 }
 
-func requestVolumeTransformFunc(payload logItems) Payload {
-	endTime, err := strconv.Atoi(payload[len(payload)-1].row[date])
-	if err != nil {
-		return &requestVolume{err: err}
-	}
-	return &requestVolume{numRequests: len(payload),
-		err: nil, endTime: time.Unix(int64(endTime), 0)}
+func requestVolumeTransformFunc(payload logItems, ts timestamp) Payload {
+	return &requestVolume{numRequests: len(payload), ts: ts}
 
 }
 

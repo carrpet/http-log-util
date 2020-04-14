@@ -10,19 +10,14 @@ func newStage(proc Transformer, interval int) Stage {
 }
 
 func (s StageConfig) Run(p StageParams) {
-	lf := LogFilter{interval: s.interval}
-	processFunc := lf.ProcessInterval()
+
+	findInterval := processInterval(s.interval)
 	var buf []Payload
+
 	for x := range p.Input() {
 		buf = append(buf, x)
-		//TODO: handle error
-		it, err := x.IteratorKey()
-		if err != nil {
-			p.Error() <- err
-			return
-		}
-		iVal := processFunc(it)
-		if !iVal {
+		recordInterval := findInterval(x)
+		if !recordInterval {
 			continue
 		}
 		result := s.proc.Transform(buf)

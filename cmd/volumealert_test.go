@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
-	"strings"
-	"testing"
 	"time"
 )
 
@@ -32,6 +29,7 @@ func setUpTestDataNoError() []requestVolume {
 
 }
 
+/*
 func TestVolumeAlert(t *testing.T) {
 
 	// every entry represents two seconds, need 12 reqs per second
@@ -55,3 +53,4 @@ func TestVolumeAlert(t *testing.T) {
 	}
 
 }
+*/

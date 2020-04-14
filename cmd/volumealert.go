@@ -21,8 +21,9 @@ type volumeAlertConfig struct {
 	interval       int
 }
 
+//TODO
 func newRequestVolume(numReq int, err error, ts int) *requestVolume {
-	return &requestVolume{numRequests: numReq, err: err, endTime: time.Unix(int64(ts), 0)}
+	return &requestVolume{numRequests: numReq, ts: timestamp{startTime: ts}}
 }
 
 func (c *volumeAlertConfig) requestVolumeAlert(ch <-chan requestVolume, w io.Writer) {
@@ -44,7 +45,7 @@ func (c *volumeAlertConfig) requestVolumeAlert(ch <-chan requestVolume, w io.Wri
 			} else if highState && totalRequests < totalRequestThreshold {
 				highState = false
 				fmt.Fprintf(w, alertRecoverMsg,
-					x.endTime.Format(time.RFC3339))
+					time.Unix(int64(x.ts.endTime), 0).Format(time.RFC3339))
 			}
 			totalRequests = 0
 		}

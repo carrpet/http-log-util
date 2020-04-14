@@ -3,7 +3,8 @@ package cmd
 // Payload represents operations that can be performed
 // on an pipeline payload object.
 type Payload interface {
-	IteratorKey() (int, error)
+	StartTime() int
+	EndTime() int
 }
 
 // Transformer represents actions that can

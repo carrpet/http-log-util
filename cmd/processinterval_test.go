@@ -5,10 +5,9 @@ import (
 )
 
 func TestProcessIntervalDoesNotReturnLastInterval(t *testing.T) {
-	lf := LogFilter{interval: 3}
-	data := [6]int{0, 2, 2, 3, 5, 6}
+	data := [6]mockPayload{{data: 0}, {data: 2}, {data: 2}, {data: 3}, {data: 5}, {data: 6}}
 	expected := [6]bool{false, false, false, true, false, false}
-	procFunc := lf.ProcessInterval()
+	procFunc := processInterval(3)
 	for i, val := range data {
 		result := procFunc(val)
 		if result != expected[i] {
@@ -18,14 +17,14 @@ func TestProcessIntervalDoesNotReturnLastInterval(t *testing.T) {
 }
 
 func TestProcessIntervalTimestampsAreNotMonotonicIncreasing(t *testing.T) {
-	lf := LogFilter{interval: 2}
-	data := [8]int{1549573868, 1549573867, 1549573868, 1549573869, 1549573870, 1549573870, 1549573871, 1549573872}
+	data := [8]mockPayload{{data: 1549573868}, {data: 1549573867}, {data: 1549573868},
+		{data: 1549573869}, {data: 1549573870}, {data: 1549573870}, {data: 1549573871}, {data: 1549573872}}
 	expected := [8]bool{false, false, false, true, false, false, false, true}
-	procFunc := lf.ProcessInterval()
+	procFunc := processInterval(2)
 	for i, val := range data {
 		result := procFunc(val)
 		if result != expected[i] {
 			t.Errorf("ProcessInterval returned wrong value, expected %t received %t for i %d", expected[i], result, i)
 		}
 	}
-} 
+}
