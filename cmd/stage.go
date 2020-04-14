@@ -1,15 +1,15 @@
 package cmd
 
-type StageConfig struct {
+type stageConfig struct {
 	interval int
 	proc     Transformer
 }
 
 func newStage(proc Transformer, interval int) Stage {
-	return StageConfig{proc: proc, interval: interval}
+	return stageConfig{proc: proc, interval: interval}
 }
 
-func (s StageConfig) Run(p StageParams) {
+func (s stageConfig) Run(p StageParams) {
 
 	findInterval := processInterval(s.interval)
 	var buf []Payload
@@ -33,16 +33,16 @@ func (s StageConfig) Run(p StageParams) {
 
 }
 
-// LogMonitorStageParams specifies the input, output, and error channels for the stage.
-type LogMonitorStageParams struct {
+// logMonitorStageParams specifies the input, output, and error channels for the stage.
+type logMonitorStageParams struct {
 	stageNum int
 	inChan   <-chan Payload
 	outChan  chan<- Payload
 	errChan  chan<- error
 }
 
-func (s *LogMonitorStageParams) Input() <-chan Payload { return s.inChan }
+func (s *logMonitorStageParams) Input() <-chan Payload { return s.inChan }
 
-func (s *LogMonitorStageParams) Output() chan<- Payload { return s.outChan }
+func (s *logMonitorStageParams) Output() chan<- Payload { return s.outChan }
 
-func (s *LogMonitorStageParams) Error() chan<- error { return s.errChan }
+func (s *logMonitorStageParams) Error() chan<- error { return s.errChan }
