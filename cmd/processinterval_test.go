@@ -28,3 +28,18 @@ func TestProcessIntervalTimestampsAreNotMonotonicIncreasing(t *testing.T) {
 		}
 	}
 }
+
+func TestProcessIntervalRequestVolumePayload(t *testing.T) {
+	data := [3]Payload{
+		&requestVolume{ts: timestamp{startTime: 5, endTime: 7}},
+		&requestVolume{ts: timestamp{startTime: 7, endTime: 8}},
+		&requestVolume{ts: timestamp{startTime: 8, endTime: 9}}}
+	expected := [3]bool{true, false, true}
+	procFunc := processInterval(2)
+	for i, val := range data {
+		result := procFunc(val)
+		if result != expected[i] {
+			t.Errorf("ProcessInterval returned wrong value, expected %t received %t for i %d", expected[i], result, i)
+		}
+	}
+}
