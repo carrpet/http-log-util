@@ -12,7 +12,7 @@ func processInterval(interval int) func(p Payload) bool {
 			minTime = p.StartTime()
 		}
 		elapsed = p.EndTime() - minTime
-		if elapsed >= minTime+interval {
+		if elapsed >= interval {
 			minTime = -1
 			elapsed = 0
 			return true
