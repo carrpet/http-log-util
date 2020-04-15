@@ -17,7 +17,15 @@ func (hs httpStats) Write(w io.Writer) {
 		time.Unix(int64(hs.StartTime()), 0).Format(time.RFC3339Nano),
 		time.Unix(int64(hs.EndTime()), 0).Format(time.RFC3339Nano))
 	for _, th := range hs.topHits {
-		fmt.Printf("Section: %s, Number of Hits: %s\n", th.section, th.hits)
+		fmt.Fprintf(w, "Section: %s, Number of Hits: %s\n", th.section, th.hits)
+	}
+	fmt.Fprintf(w, "\n")
+	fmt.Fprintf(w, "Non Success Status Requests For Time Period %s to %s:\n",
+		time.Unix(int64(hs.StartTime()), 0).Format(time.RFC3339Nano),
+		time.Unix(int64(hs.EndTime()), 0).Format(time.RFC3339Nano))
+	for _, us := range hs.unsuccessfulReqs {
+		fmt.Fprintf(w, "Section: %s, Number of Non-Success Requests: %d\n",
+			us.section, us.hits)
 	}
 }
 
