@@ -19,7 +19,7 @@ func (m mockStage) Run(p StageParams) {
 	for data := range p.Input() {
 		intdata := data.(mockPayload)
 		intdata.data = intdata.data + m.toAdd
-		p.Output() <- intdata
+		p.Output()[0] <- intdata
 	}
 }
 
@@ -69,7 +69,7 @@ func TestPipelineStart(t *testing.T) {
 			t.Errorf(testErrMessage("Pipeline output validation failed", strconv.Itoa(i), strconv.Itoa(output.data)))
 		}
 		i++
-		length = length - 1
+		length--
 	}
 	if length > 0 {
 		t.Errorf("Actual length less then expected number of payload items")

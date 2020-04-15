@@ -20,15 +20,20 @@ func (s stageConfig) Run(p StageParams) {
 		if !recordInterval {
 			continue
 		}
-		result := s.proc.Transform(buf)
-		p.Output() <- result
+		for i := range p.Output() {
+			result := s.proc.Transform(buf)
+			p.Output()[i] <- result
+		}
 		buf = nil
 	}
 
 	//handle the case where we are at the end of input and need to send
 	// the remaining items
 	if buf != nil {
-		p.Output() <- s.proc.Transform(buf)
+		for i := range p.Output() {
+			result := s.proc.Transform(buf)
+			p.Output()[i] <- result
+		}
 	}
 
 }
@@ -37,12 +42,12 @@ func (s stageConfig) Run(p StageParams) {
 type logMonitorStageParams struct {
 	stageNum int
 	inChan   <-chan Payload
-	outChan  chan<- Payload
+	outChan  []chan<- Payload
 	errChan  chan<- error
 }
 
 func (s *logMonitorStageParams) Input() <-chan Payload { return s.inChan }
 
-func (s *logMonitorStageParams) Output() chan<- Payload { return s.outChan }
+func (s *logMonitorStageParams) Output() []chan<- Payload { return s.outChan }
 
 func (s *logMonitorStageParams) Error() chan<- error { return s.errChan }

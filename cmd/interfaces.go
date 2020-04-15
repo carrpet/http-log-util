@@ -18,7 +18,7 @@ type Transformer interface {
 // input, output, and error channels for each stage.
 type StageParams interface {
 	Input() <-chan Payload
-	Output() chan<- Payload
+	Output() []chan<- Payload
 	Error() chan<- error
 }
 

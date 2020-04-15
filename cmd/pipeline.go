@@ -27,7 +27,7 @@ func (p *pipeline) Start(src Source) (<-chan Payload, <-chan error) {
 	}
 	for i := 0; i < len(p.stages); i++ {
 		go func(n int) {
-			p.stages[n].Run(&logMonitorStageParams{stageNum: n, inChan: stagesCh[n], outChan: stagesCh[n+1], errChan: errCh})
+			p.stages[n].Run(&logMonitorStageParams{stageNum: n, inChan: stagesCh[n], outChan: []chan<- Payload{stagesCh[n+1]}, errChan: errCh})
 
 			//Each goroutine is responsible for closing the downstream channel to signal that it is done.
 			close(stagesCh[n+1])
