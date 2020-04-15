@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"strconv"
+	"strings"
 )
 
 type logItems []logItem
@@ -29,6 +30,19 @@ type timestamp struct {
 	endTime   int
 }
 
+type httpStats struct {
+	ts      timestamp
+	topHits []topHitStat
+}
+
+func (s *httpStats) StartTime() int { return s.ts.startTime }
+func (s *httpStats) EndTime() int   { return s.ts.endTime }
+
+type topHitStat struct {
+	section string
+	hits    string
+}
+
 type requestVolume struct {
 	numRequests int
 	ts          timestamp
@@ -49,12 +63,25 @@ type volumeAlertStatus struct {
 func (v *volumeAlertStatus) StartTime() int { return v.time }
 func (v *volumeAlertStatus) EndTime() int   { return v.time }
 
-//TransformForWrite computes the metrics for
-// writing to output.
-/*
-func (li LogItems) TransformForWrite() Writable {
+type httpStatsProcessor struct {
+	transformFunc func(logItems, timestamp) Payload
+}
+
+// Transform converts the data to the form that is expected
+// in the downstream stage of the pipeline.
+func (hs *httpStatsProcessor) Transform(p []Payload) Payload {
+	ts := getPayloadsTimestamp(p)
+	payload := convertToLogItems(p)
+	return hs.transformFunc(payload, ts)
+}
+
+func newHTTPStatsProcessor() *httpStatsProcessor {
+	return &httpStatsProcessor{transformFunc: httpStatsTransformFunc}
+}
+
+func httpStatsTransformFunc(p logItems, ts timestamp) Payload {
 	hits := map[string]int{}
-	for _, val := range li {
+	for _, val := range p {
 		req := val.row[req]
 		path := strings.Split(req, " ")
 		section := "/" + strings.SplitN(path[1], "/", 3)[1]
@@ -70,21 +97,9 @@ func (li LogItems) TransformForWrite() Writable {
 			maxSection = sect
 		}
 	}
-	return HttpStats{topHits: []TopHitStat{{section: maxSection, hits: strconv.Itoa(maxHits)}}}
-}
-*/
+	return &httpStats{ts: ts,
+		topHits: []topHitStat{{section: maxSection, hits: strconv.Itoa(maxHits)}}}
 
-type httpStatsProcessor struct {
-}
-
-// Transform converts the data to the form that is expected
-// in the downstream stage of the pipeline.
-func (hs *httpStatsProcessor) Transform(p []Payload) Payload {
-	return nil
-}
-
-func newHTTPStatsProcessor() *httpStatsProcessor {
-	return &httpStatsProcessor{}
 }
 
 type requestVolumeProcessor struct {
@@ -97,7 +112,7 @@ func newRequestVolumeProcessor() *requestVolumeProcessor {
 
 // Transform counts the number of total requests in the interval.
 func (r *requestVolumeProcessor) Transform(p []Payload) Payload {
-	ts := timestamp{startTime: p[0].StartTime(), endTime: p[len(p)-1].EndTime()}
+	ts := getPayloadsTimestamp(p)
 	payload := convertToLogItems(p)
 	return r.transformFunc(payload, ts)
 }
@@ -147,4 +162,8 @@ func convertToRequestVolumes(p []Payload) requestVolumes {
 		payload = append(payload, *(val.(*requestVolume)))
 	}
 	return payload
+}
+
+func getPayloadsTimestamp(p []Payload) timestamp {
+	return timestamp{startTime: p[0].StartTime(), endTime: p[len(p)-1].EndTime()}
 }

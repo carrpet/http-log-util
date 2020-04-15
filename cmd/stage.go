@@ -2,11 +2,20 @@ package cmd
 
 type stageConfig struct {
 	interval int
-	proc     Transformer
+	proc     []Transformer
 }
 
+// newStage creates a new stage with one output and associated transformer
 func newStage(proc Transformer, interval int) Stage {
-	return stageConfig{proc: proc, interval: interval}
+	return stageConfig{proc: []Transformer{proc}, interval: interval}
+}
+
+// newFanOutStage allows multiple Transformers to process
+// data to be sent to multiple downstream stages. The first
+// transformer specified will be used for the first output channel
+// the second transformer will be used for the second...
+func newFanOutStage(procs []Transformer, interval int) Stage {
+	return stageConfig{}
 }
 
 func (s stageConfig) Run(p StageParams) {
@@ -21,7 +30,7 @@ func (s stageConfig) Run(p StageParams) {
 			continue
 		}
 		for i := range p.Output() {
-			result := s.proc.Transform(buf)
+			result := s.proc[i].Transform(buf)
 			p.Output()[i] <- result
 		}
 		buf = nil
@@ -31,7 +40,7 @@ func (s stageConfig) Run(p StageParams) {
 	// the remaining items
 	if buf != nil {
 		for i := range p.Output() {
-			result := s.proc.Transform(buf)
+			result := s.proc[i].Transform(buf)
 			p.Output()[i] <- result
 		}
 	}

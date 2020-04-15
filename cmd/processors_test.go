@@ -1,21 +1,23 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 )
 
-/*
-func TestComputeTopHitsReturnsCorrectData(t *testing.T) {
-	testdata := [][]string{
-		[]string{"10.0.0.2", "-", "apache", "1549573862", "GET /api/user/bleh/h HTTP/1.0", "200", "1234"},
-		[]string{"10.0.0.4", "-", "apache", "1549573861", "GET /api/user HTTP/1.0", "200", "1234"},
-		[]string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "500", "1136"},
-		[]string{"10.0.0.4", "-", "apache", "1549573862", "POST /api/help HTTP/1.0", "200", "1234"},
-		[]string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "200", "1234"},
-		[]string{"10.0.0.1", "-", "apache", "1549573862", "GET /report HTTP/1.0", "500", "1194"},
+func TestHttpStatsTransformFunc(t *testing.T) {
+	testdata := logItems{
+		{row: []string{"10.0.0.2", "-", "apache", "1549573862", "GET /api/user/bleh/h HTTP/1.0", "200", "1234"}},
+		{row: []string{"10.0.0.4", "-", "apache", "1549573861", "GET /api/user HTTP/1.0", "200", "1234"}},
+		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "500", "1136"}},
+		{row: []string{"10.0.0.4", "-", "apache", "1549573862", "POST /api/help HTTP/1.0", "200", "1234"}},
+		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "200", "1234"}},
+		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /report HTTP/1.0", "500", "1194"}},
 	}
-	result := computeTopHits(testdata)
+
+	toTest := newHTTPStatsProcessor()
+	result := toTest.transformFunc(testdata, timestamp{}).(*httpStats)
 	topSection := result.topHits[0].section
 	topHitsCount := result.topHits[0].hits
 	if topSection != "/api" {
@@ -30,7 +32,6 @@ func TestComputeTopHitsReturnsCorrectData(t *testing.T) {
 	}
 
 }
-*/
 
 func TestRequestVolumeProcessorTransformFunc(t *testing.T) {
 	testdata := logItems{
@@ -62,7 +63,6 @@ func TestRequestVolumeProcessorTransformFunc(t *testing.T) {
 func TestAlertOutputProcessorTransformFunc(t *testing.T) {
 
 	// tell function to alert for request volume > 2 requests per sec
-	// with function expecting 10 seconds of data
 	toTest := newAlertOutputProcessor(2)
 
 	data := [3]requestVolumes{
