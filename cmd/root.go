@@ -11,7 +11,7 @@ import (
 var (
 	rootCmd = &cobra.Command{
 		Use:   "httpmonitorutil",
-		Short: "HttpMonitorUtil is a CLI utility to monitor http log files",
+		Short: "HTTPMonitorUtil is a CLI utility to monitor http log files",
 		Long: `A CLI utility to monitor http log files and gather metrics and useful 
 				statistics about them.`,
 		Args: argValidator,

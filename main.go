@@ -1,7 +1,7 @@
 package main
 
 import (
-	"main/cmd"
+	"httpmonitorutil/cmd"
 )
 
 func main() {

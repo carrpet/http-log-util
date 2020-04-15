@@ -86,21 +86,27 @@ func httpStatsTransformFunc(p logItems, ts timestamp) Payload {
 
 	stats := map[string]*sectionStats{}
 	for _, val := range p {
+
+		// parse strings from logItem row
 		status, _ := strconv.Atoi(val.row[status])
 		req := val.row[req]
 		path := strings.Split(req, " ")
 		section := "/" + strings.SplitN(path[1], "/", 3)[1]
+
+		// keep track of section stats
 		if _, ok := stats[section]; !ok {
 			stats[section] = &sectionStats{hits: 1}
 		} else {
 			stats[section].hits++
 		}
+
+		//count non success hits per section
 		if status != http.StatusOK {
 			stats[section].nonSuccessRequests++
 		}
 	}
 
-	//find the max hits section
+	//find the max hits and gather section stats
 	maxHits := 0
 	var maxSection string
 	badHits := []nonSuccessHits{}

@@ -1,4 +1,4 @@
-module main
+module httpmonitorutil
 
 go 1.13
 
