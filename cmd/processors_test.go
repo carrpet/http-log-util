@@ -59,19 +59,47 @@ func TestRequestVolumeProcessorTransformFunc(t *testing.T) {
 
 }
 
-/*
 func TestAlertOutputProcessorTransformFunc(t *testing.T) {
 
 	// tell function to alert for request volume > 2 requests per sec
 	// with function expecting 10 seconds of data
 	toTest := newAlertOutputProcessor(2)
-	testFunc := toTest.transformFunc(10)
-	testdata := []requestVolume{
-		{numRequests: 1, endTime: time.Unix(10,0)},
-		{numRequests: 8, endTime: time.Unix(12,0)},
-		{numRequests: 10, endTime: time.Unix()}
+
+	data := [3]requestVolumes{
+		// 109 requests in 31 seconds
+		{{numRequests: 1, ts: timestamp{startTime: 1, endTime: 10}},
+			{numRequests: 8, ts: timestamp{startTime: 11, endTime: 21}},
+			{numRequests: 100, ts: timestamp{startTime: 22, endTime: 32}}},
+
+		// 7 requests in 30 seconds
+		{{numRequests: 1, ts: timestamp{startTime: 33, endTime: 43}},
+			{numRequests: 4, ts: timestamp{startTime: 43, endTime: 54}},
+			{numRequests: 2, ts: timestamp{startTime: 55, endTime: 63}}},
+
+		// 3 requests in 30 seconds
+		{{numRequests: 1, ts: timestamp{startTime: 64, endTime: 74}},
+			{numRequests: 1, ts: timestamp{startTime: 75, endTime: 85}},
+			{numRequests: 1, ts: timestamp{startTime: 85, endTime: 94}}}}
+
+	expected := [3]volumeAlertStatus{
+		{alertFiring: true, time: 32, volume: 109},
+		{alertFiring: false, time: 63, volume: 7},
+		{alertFiring: false, time: 94, volume: 3}}
+
+	for i, val := range data {
+		result := toTest.transformFunc(val).(*volumeAlertStatus)
+		if result.alertFiring != expected[i].alertFiring {
+			t.Errorf(testErrMessage("alertOutputTransformFunc, wrong values for alertFiring",
+				strconv.FormatBool(expected[i].alertFiring), strconv.FormatBool(result.alertFiring)))
+		}
+		if result.time != expected[i].time {
+			t.Errorf(testErrMessage("alertOutputTransformFunc, wrong values for time",
+				strconv.Itoa(expected[i].time), strconv.Itoa(result.time)))
+		}
+		if result.volume != expected[i].volume {
+			t.Errorf(testErrMessage("alertOutputTransformFunc, wrong values for volume",
+				strconv.Itoa(expected[i].volume), strconv.Itoa(result.volume)))
+		}
 	}
 
-
 }
-*/

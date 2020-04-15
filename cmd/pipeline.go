@@ -5,18 +5,18 @@ package cmd
 // pipeline should contain a go channel that listens on a channel and
 // consumes 10 seconds worth of data
 
-type Pipeline struct {
+type pipeline struct {
 	stages []Stage
 }
 
-func newPipeline(s ...Stage) *Pipeline {
-	return &Pipeline{stages: s}
+func newPipeline(s ...Stage) *pipeline {
+	return &pipeline{stages: s}
 }
 
 // Start sets up the pipeline and starts it using the src as the source of the payload.
 // The function returns a read channel from the final stage of the pipeline and
 // an error read channel that can be used to retrieve errors from any stage.
-func (p *Pipeline) Start(src Source) (<-chan Payload, <-chan error) {
+func (p *pipeline) Start(src Source) (<-chan Payload, <-chan error) {
 
 	stagesCh := make([]chan Payload, len(p.stages)+1)
 	errCh := make(chan error, len(p.stages)+2)
@@ -27,7 +27,7 @@ func (p *Pipeline) Start(src Source) (<-chan Payload, <-chan error) {
 	}
 	for i := 0; i < len(p.stages); i++ {
 		go func(n int) {
-			p.stages[n].Run(&LogMonitorStageParams{stageNum: n, inChan: stagesCh[n], outChan: stagesCh[n+1], errChan: errCh})
+			p.stages[n].Run(&logMonitorStageParams{stageNum: n, inChan: stagesCh[n], outChan: stagesCh[n+1], errChan: errCh})
 
 			//Each goroutine is responsible for closing the downstream channel to signal that it is done.
 			close(stagesCh[n+1])

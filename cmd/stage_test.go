@@ -31,7 +31,7 @@ func stageTestRunner(toTest Stage, validatorFunc func(Payload, Payload),
 
 	}()
 
-	params := &LogMonitorStageParams{stageNum: 0, inChan: inCh, outChan: outCh, errChan: nil}
+	params := &logMonitorStageParams{stageNum: 0, inChan: inCh, outChan: outCh, errChan: nil}
 	go func() {
 		toTest.Run(params)
 		close(outCh)

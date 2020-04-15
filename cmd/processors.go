@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"strconv"
-	"time"
 )
 
 type logItems []logItem
@@ -35,19 +34,20 @@ type requestVolume struct {
 	ts          timestamp
 }
 
-func (r *requestVolume) StartTime() int { return r.ts.startTime }
+type requestVolumes []requestVolume
 
-func (r *requestVolume) EndTime() int { return r.ts.endTime }
+func (r *requestVolume) StartTime() int { return r.ts.startTime }
+func (r *requestVolume) EndTime() int   { return r.ts.endTime }
 
 // represents a state transition for volume alerts
-type volumeAlertTransition struct {
-	alertFired bool
-	timestamp  time.Time
+type volumeAlertStatus struct {
+	alertFiring bool
+	time        int
+	volume      int
 }
 
-type volumeAlerts struct {
-	alerts []volumeAlertTransition
-}
+func (v *volumeAlertStatus) StartTime() int { return v.time }
+func (v *volumeAlertStatus) EndTime() int   { return v.time }
 
 //TransformForWrite computes the metrics for
 // writing to output.
@@ -85,28 +85,14 @@ func (hs *httpStatsProcessor) Transform(p []Payload) Payload {
 
 func newHTTPStatsProcessor() *httpStatsProcessor {
 	return &httpStatsProcessor{}
-
 }
 
-/*
-func newAlertOutputProcessor(threshold, freq int) *alertOutputProcessor {
-	return &alertOutputProcessor{alertThreshold: threshold, alertFrequency: freq}
-
-}
-*/
 type requestVolumeProcessor struct {
 	transformFunc func(logItems, timestamp) Payload
 }
 
 func newRequestVolumeProcessor() *requestVolumeProcessor {
 	return &requestVolumeProcessor{transformFunc: requestVolumeTransformFunc}
-}
-
-type requestVolumeFunc func(int) *requestVolumeProcessor
-
-func (r requestVolumeFunc) Transform(p []Payload) Payload {
-
-	return nil
 }
 
 // Transform counts the number of total requests in the interval.
@@ -118,26 +104,32 @@ func (r *requestVolumeProcessor) Transform(p []Payload) Payload {
 
 func requestVolumeTransformFunc(payload logItems, ts timestamp) Payload {
 	return &requestVolume{numRequests: len(payload), ts: ts}
-
 }
 
 type alertOutputProcessor struct {
 	alertThreshold int
-	transformFunc  func(int) func([]requestVolume) []volumeAlerts
+	transformFunc  func(requestVolumes) Payload
 }
 
 func newAlertOutputProcessor(threshold int) *alertOutputProcessor {
-	return &alertOutputProcessor{transformFunc: alertOutputTransformFuncBuilder, alertThreshold: threshold}
+	return &alertOutputProcessor{transformFunc: alertOutputFuncBuilder(threshold), alertThreshold: threshold}
 }
 
 func (a *alertOutputProcessor) Transform(p []Payload) Payload {
-	return nil
+	payload := convertToRequestVolumes(p)
+	return a.transformFunc(payload)
 }
 
-func alertOutputTransformFuncBuilder(interval int) func([]requestVolume) []volumeAlerts {
-	return func(payload []requestVolume) []volumeAlerts {
-		return []volumeAlerts{}
-
+func alertOutputFuncBuilder(threshold int) func(requestVolumes) Payload {
+	return func(payload requestVolumes) Payload {
+		numRequests := 0
+		for _, val := range payload {
+			numRequests += val.numRequests
+		}
+		endTime := payload[len(payload)-1].EndTime()
+		duration := endTime - payload[0].StartTime()
+		alertFiring := (float64(numRequests) / float64(duration)) > float64(threshold)
+		return &volumeAlertStatus{alertFiring: alertFiring, time: endTime, volume: numRequests}
 	}
 }
 
@@ -145,6 +137,14 @@ func convertToLogItems(p []Payload) logItems {
 	var payload logItems
 	for _, val := range p {
 		payload = append(payload, *(val.(*logItem)))
+	}
+	return payload
+}
+
+func convertToRequestVolumes(p []Payload) requestVolumes {
+	var payload requestVolumes
+	for _, val := range p {
+		payload = append(payload, *(val.(*requestVolume)))
 	}
 	return payload
 }
