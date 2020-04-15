@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// logItems represent objects coming from the csv source
 type logItems []logItem
 
 type logItem struct {
@@ -30,6 +31,8 @@ type timestamp struct {
 	endTime   int
 }
 
+// httpStats represents stats that are
+// collected about the http log data
 type httpStats struct {
 	ts      timestamp
 	topHits []topHitStat
@@ -43,42 +46,30 @@ type topHitStat struct {
 	hits    string
 }
 
-type requestVolume struct {
-	numRequests int
-	ts          timestamp
-}
-
-type requestVolumes []requestVolume
-
-func (r *requestVolume) StartTime() int { return r.ts.startTime }
-func (r *requestVolume) EndTime() int   { return r.ts.endTime }
-
-// represents a state transition for volume alerts
-type volumeAlertStatus struct {
-	alertFiring bool
-	time        int
-	volume      int
-}
-
-func (v *volumeAlertStatus) StartTime() int { return v.time }
-func (v *volumeAlertStatus) EndTime() int   { return v.time }
-
-type httpStatsProcessor struct {
+// HTTPStatsProcessor represents configuration for
+// a processor to implement gathering http log statistics for a pipeline stage.
+type HTTPStatsProcessor struct {
 	transformFunc func(logItems, timestamp) Payload
 }
 
-// Transform converts the data to the form that is expected
-// in the downstream stage of the pipeline.
-func (hs *httpStatsProcessor) Transform(p []Payload) Payload {
+// NewHTTPStatsProcessor returns an httpStatsProcessor
+// that can be used in processing a pipeline stage.
+func NewHTTPStatsProcessor() *HTTPStatsProcessor {
+	return &HTTPStatsProcessor{transformFunc: httpStatsTransformFunc}
+}
+
+// Transform applies the httpStatsProcessor
+// transform func to convert LogItems to requestVolumes
+// that are to be sent downstream.
+func (hs *HTTPStatsProcessor) Transform(p []Payload) Payload {
 	ts := getPayloadsTimestamp(p)
 	payload := convertToLogItems(p)
 	return hs.transformFunc(payload, ts)
 }
 
-func newHTTPStatsProcessor() *httpStatsProcessor {
-	return &httpStatsProcessor{transformFunc: httpStatsTransformFunc}
-}
-
+// httpStatsTransformFunc computes meaningful statistics about
+// a collection of logItems to obtain http metrics and alert data
+// for downstream stages.
 func httpStatsTransformFunc(p logItems, ts timestamp) Payload {
 	hits := map[string]int{}
 	for _, val := range p {
@@ -102,16 +93,35 @@ func httpStatsTransformFunc(p logItems, ts timestamp) Payload {
 
 }
 
-type requestVolumeProcessor struct {
+// requestVolume represents
+// the number of http requests recorded
+// for a given time interval
+type requestVolume struct {
+	numRequests int
+	ts          timestamp
+}
+
+type requestVolumes []requestVolume
+
+func (r *requestVolume) StartTime() int { return r.ts.startTime }
+func (r *requestVolume) EndTime() int   { return r.ts.endTime }
+
+// RequestVolumeProcessor represents configuration for
+// a processor to implement counting number of http requests for a pipeline stage.
+type RequestVolumeProcessor struct {
 	transformFunc func(logItems, timestamp) Payload
 }
 
-func newRequestVolumeProcessor() *requestVolumeProcessor {
-	return &requestVolumeProcessor{transformFunc: requestVolumeTransformFunc}
+// NewRequestVolumeProcessor returns a requestVolumeProcessor
+// that can be used in processing a pipeline stage.
+func NewRequestVolumeProcessor() *RequestVolumeProcessor {
+	return &RequestVolumeProcessor{transformFunc: requestVolumeTransformFunc}
 }
 
-// Transform counts the number of total requests in the interval.
-func (r *requestVolumeProcessor) Transform(p []Payload) Payload {
+// Transform applies the requestProcessor
+// transform func to convert logItems to requestVolumes
+// that are to be sent downstream.
+func (r *RequestVolumeProcessor) Transform(p []Payload) Payload {
 	ts := getPayloadsTimestamp(p)
 	payload := convertToLogItems(p)
 	return r.transformFunc(payload, ts)
@@ -121,21 +131,40 @@ func requestVolumeTransformFunc(payload logItems, ts timestamp) Payload {
 	return &requestVolume{numRequests: len(payload), ts: ts}
 }
 
-type alertOutputProcessor struct {
+// volumeAlertStatus represents the alert state for a time interval
+type volumeAlertStatus struct {
+	alertFiring bool
+	time        int
+	volume      int
+}
+
+func (v *volumeAlertStatus) StartTime() int { return v.time }
+func (v *volumeAlertStatus) EndTime() int   { return v.time }
+
+// AlertProcessor represents configuration for
+// a processor to implement http request volume alerts for a pipeline stage.
+type AlertProcessor struct {
 	alertThreshold int
 	transformFunc  func(requestVolumes) Payload
 }
 
-func newAlertOutputProcessor(threshold int) *alertOutputProcessor {
-	return &alertOutputProcessor{transformFunc: alertOutputFuncBuilder(threshold), alertThreshold: threshold}
+// NewAlertProcessor returns an alertProcessor configured with the given
+// alert threshold that can be used in processing a pipeline stage.
+func NewAlertProcessor(threshold int) *AlertProcessor {
+	return &AlertProcessor{transformFunc: alertFuncBuilder(threshold), alertThreshold: threshold}
 }
 
-func (a *alertOutputProcessor) Transform(p []Payload) Payload {
+// Transform applies the alertProcessor
+// transform func to convert requestVolumes to voluemAlertStatus
+// that are to be sent downstream.
+func (a *AlertProcessor) Transform(p []Payload) Payload {
 	payload := convertToRequestVolumes(p)
 	return a.transformFunc(payload)
 }
 
-func alertOutputFuncBuilder(threshold int) func(requestVolumes) Payload {
+// alertFuncBuilder returns a function to compute when volume alerts
+// should fire based on the configured threshold.
+func alertFuncBuilder(threshold int) func(requestVolumes) Payload {
 	return func(payload requestVolumes) Payload {
 		numRequests := 0
 		for _, val := range payload {

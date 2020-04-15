@@ -28,8 +28,7 @@ type mockPayload struct {
 }
 
 func (m mockPayload) StartTime() int { return m.data }
-
-func (m mockPayload) EndTime() int { return m.data }
+func (m mockPayload) EndTime() int   { return m.data }
 
 type mockSource struct {
 	data []int

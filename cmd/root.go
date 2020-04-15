@@ -67,10 +67,11 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	//setup and start the pipeline using csv file as source
 	httpLogMonitor := NewPipeline(
 		NewFanOutStage(
-			[]Transformer{newRequestVolumeProcessor(), newHTTPStatsProcessor()},
+			[]Transformer{NewRequestVolumeProcessor(), NewHTTPStatsProcessor()},
 			logIntervalSec),
-		newStage(newAlertOutputProcessor(alertThresholdSec), alertFrequencySec))
+		newStage(NewAlertProcessor(alertThresholdSec), alertFrequencySec))
 
+	//channels that will be managed by this goroutine to retrieve output from the pipeline
 	statsCh := make(chan Payload)
 	sinkCh, _ := httpLogMonitor.Start(logSource, statsCh)
 

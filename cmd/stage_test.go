@@ -92,7 +92,7 @@ func TestRequestVolumeStage(t *testing.T) {
 		&requestVolume{numRequests: 4, ts: timestamp{startTime: 12345, endTime: 12346}},
 		&requestVolume{numRequests: 4, ts: timestamp{startTime: 12347, endTime: 12349}},
 		&requestVolume{numRequests: 1, ts: timestamp{startTime: 12349, endTime: 12349}}}
-	toTest := newStage(newRequestVolumeProcessor(), 2)
+	toTest := newStage(NewRequestVolumeProcessor(), 2)
 
 	validate := func(expected Payload, actual Payload) {
 		result := actual.(*requestVolume)

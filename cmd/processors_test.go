@@ -16,7 +16,7 @@ func TestHttpStatsTransformFunc(t *testing.T) {
 		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /report HTTP/1.0", "500", "1194"}},
 	}
 
-	toTest := newHTTPStatsProcessor()
+	toTest := NewHTTPStatsProcessor()
 	result := toTest.transformFunc(testdata, timestamp{}).(*httpStats)
 	topSection := result.topHits[0].section
 	topHitsCount := result.topHits[0].hits
@@ -46,7 +46,7 @@ func TestRequestVolumeProcessorTransformFunc(t *testing.T) {
 	expectedTimeEnd, _ := strconv.Atoi(testdata[5].row[date])
 	timeStamp := timestamp{startTime: expectedTimeStart, endTime: expectedTimeEnd}
 	expected := requestVolume{numRequests: 6, ts: timeStamp}
-	rvProcessor := newRequestVolumeProcessor()
+	rvProcessor := NewRequestVolumeProcessor()
 	result := rvProcessor.transformFunc(testdata, timeStamp).(*requestVolume)
 	if result.numRequests != expected.numRequests {
 		t.Errorf(testErrMessage("RequestVolumeProcessor.transformFunc had wrong output",
@@ -63,7 +63,7 @@ func TestRequestVolumeProcessorTransformFunc(t *testing.T) {
 func TestAlertOutputProcessorTransformFunc(t *testing.T) {
 
 	// tell function to alert for request volume > 2 requests per sec
-	toTest := newAlertOutputProcessor(2)
+	toTest := NewAlertProcessor(2)
 
 	data := [3]requestVolumes{
 		// 109 requests in 31 seconds
