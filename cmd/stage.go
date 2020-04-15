@@ -10,12 +10,14 @@ func newStage(proc Transformer, interval int) Stage {
 	return stageConfig{proc: []Transformer{proc}, interval: interval}
 }
 
-// newFanOutStage allows multiple Transformers to process
+// NewFanOutStage allows multiple Transformers to process
 // data to be sent to multiple downstream stages. The first
 // transformer specified will be used for the first output channel
 // the second transformer will be used for the second...
-func newFanOutStage(procs []Transformer, interval int) Stage {
-	return stageConfig{}
+// If stage output channels are specified in the Pipeline.Start method, then
+// they will correspond to the last transformers specified in the list
+func NewFanOutStage(procs []Transformer, interval int) Stage {
+	return stageConfig{proc: procs, interval: interval}
 }
 
 func (s stageConfig) Run(p StageParams) {

@@ -11,8 +11,14 @@ const (
 	alertRecoverMsg     = "The alert has recovered at time %s\n"
 )
 
-func newRequestVolume(numReq int, err error, ts int) *requestVolume {
-	return &requestVolume{numRequests: numReq, ts: timestamp{startTime: ts}}
+func (hs httpStats) Write(w io.Writer) {
+	fmt.Fprintf(w, "\n")
+	fmt.Fprintf(w, "Top Hits For Time Period %s to %s:\n",
+		time.Unix(int64(hs.StartTime()), 0).Format(time.RFC3339Nano),
+		time.Unix(int64(hs.EndTime()), 0).Format(time.RFC3339Nano))
+	for _, th := range hs.topHits {
+		fmt.Printf("Section: %s, Number of Hits: %s\n", th.section, th.hits)
+	}
 }
 
 func writeAlerts(ch <-chan Payload, w io.Writer) {

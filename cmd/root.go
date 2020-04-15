@@ -68,12 +68,22 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	// setup sink to be the log writers
 
 	//setup and start the pipeline using source as source
-	httpLogMonitor := newPipeline(
-		newStage(newRequestVolumeProcessor(), logIntervalSec),
+	httpLogMonitor := NewPipeline(
+		NewFanOutStage(
+			[]Transformer{newRequestVolumeProcessor(), newHTTPStatsProcessor()},
+			logIntervalSec),
 		newStage(newAlertOutputProcessor(alertThresholdPerSec), alertFrequencySec))
 
-	sinkCh, _ := httpLogMonitor.Start(logSource)
+	statsCh := make(chan Payload)
+	sinkCh, _ := httpLogMonitor.Start(logSource, statsCh)
 
+	// process the http stats
+	go func() {
+		for x := range statsCh {
+			stat := x.(*httpStats)
+			stat.Write(os.Stdout)
+		}
+	}()
 	writeAlerts(sinkCh, os.Stdout)
 
 	return nil

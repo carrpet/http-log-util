@@ -46,7 +46,7 @@ func (m mockSource) Data(s SourceParams) {
 func TestPipelineStart(t *testing.T) {
 
 	// create a pipeline that adds 2 and 8 to each input respectively
-	toTest := newPipeline(mockStage{toAdd: 2}, mockStage{toAdd: 8})
+	toTest := NewPipeline(mockStage{toAdd: 2}, mockStage{toAdd: 8})
 	testPayload := []int{1, 2, 3, 4, 5, 6}
 	expected := []int{11, 12, 13, 14, 15, 16}
 
