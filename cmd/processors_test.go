@@ -11,24 +11,46 @@ func TestHttpStatsTransformFunc(t *testing.T) {
 		{row: []string{"10.0.0.2", "-", "apache", "1549573862", "GET /api/user/bleh/h HTTP/1.0", "200", "1234"}},
 		{row: []string{"10.0.0.4", "-", "apache", "1549573861", "GET /api/user HTTP/1.0", "200", "1234"}},
 		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "500", "1136"}},
-		{row: []string{"10.0.0.4", "-", "apache", "1549573862", "POST /api/help HTTP/1.0", "200", "1234"}},
+		{row: []string{"10.0.0.4", "-", "apache", "1549573862", "POST /api/help HTTP/1.0", "500", "1234"}},
 		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /api/help HTTP/1.0", "200", "1234"}},
-		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /report HTTP/1.0", "500", "1194"}},
+		{row: []string{"10.0.0.1", "-", "apache", "1549573862", "GET /report HTTP/1.0", "200", "1194"}},
 	}
 
 	toTest := NewHTTPStatsProcessor()
 	result := toTest.transformFunc(testdata, timestamp{}).(*httpStats)
 	topSection := result.topHits[0].section
 	topHitsCount := result.topHits[0].hits
-	if topSection != "/api" {
+	expected := httpStats{
+		topHits:          []topHitStat{{section: "/api", hits: "5"}},
+		unsuccessfulReqs: []nonSuccessHits{{section: "/api", hits: 2}, {section: "/report", hits: 0}}}
+	if topSection != expected.topHits[0].section {
 		t.Errorf(
 			testErrMessage("Returned section was incorrect",
 				"section should be /api", fmt.Sprintf("section was: %s", topSection)))
 	}
-	if topHitsCount != "5" {
+	if topHitsCount != expected.topHits[0].hits {
 		t.Errorf(
 			testErrMessage("Number of hits was incorrect", "hits should be 5",
 				fmt.Sprintf("Hits was %s", topHitsCount)))
+	}
+	for _, ex := range expected.unsuccessfulReqs {
+
+		// we need to loop through all the results because order is not guaranteed
+		found := false
+		for _, actual := range result.unsuccessfulReqs {
+			if ex.section == actual.section {
+				found = true
+				if ex.hits != actual.hits {
+					t.Errorf(
+						testErrMessage("UnsuccessfulReqs hits was different than expected",
+							fmt.Sprintf("%d", ex.hits), fmt.Sprintf("%d", actual.hits)))
+				}
+			}
+		}
+		if !found {
+			t.Errorf(
+				testErrMessage("Missing unsuccessfulReqs section from result", ex.section, ""))
+		}
 	}
 
 }

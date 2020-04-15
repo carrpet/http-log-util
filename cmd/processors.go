@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -34,8 +35,14 @@ type timestamp struct {
 // httpStats represents stats that are
 // collected about the http log data
 type httpStats struct {
-	ts      timestamp
-	topHits []topHitStat
+	ts               timestamp
+	topHits          []topHitStat
+	unsuccessfulReqs []nonSuccessHits
+}
+
+type nonSuccessHits struct {
+	section string
+	hits    int
 }
 
 func (s *httpStats) StartTime() int { return s.ts.startTime }
@@ -44,6 +51,11 @@ func (s *httpStats) EndTime() int   { return s.ts.endTime }
 type topHitStat struct {
 	section string
 	hits    string
+}
+
+type sectionStats struct {
+	hits               int
+	nonSuccessRequests int
 }
 
 // HTTPStatsProcessor represents configuration for
@@ -71,24 +83,35 @@ func (hs *HTTPStatsProcessor) Transform(p []Payload) Payload {
 // a collection of logItems to obtain http metrics and alert data
 // for downstream stages.
 func httpStatsTransformFunc(p logItems, ts timestamp) Payload {
-	hits := map[string]int{}
+
+	stats := map[string]*sectionStats{}
 	for _, val := range p {
+		status, _ := strconv.Atoi(val.row[status])
 		req := val.row[req]
 		path := strings.Split(req, " ")
 		section := "/" + strings.SplitN(path[1], "/", 3)[1]
-		hits[section]++
+		if _, ok := stats[section]; !ok {
+			stats[section] = &sectionStats{hits: 1}
+		} else {
+			stats[section].hits++
+		}
+		if status != http.StatusOK {
+			stats[section].nonSuccessRequests++
+		}
 	}
 
 	//find the max hits section
 	maxHits := 0
 	var maxSection string
-	for sect, h := range hits {
-		if h > maxHits {
-			maxHits = h
-			maxSection = sect
+	badHits := []nonSuccessHits{}
+	for section, s := range stats {
+		badHits = append(badHits, nonSuccessHits{section: section, hits: s.nonSuccessRequests})
+		if s.hits > maxHits {
+			maxHits = s.hits
+			maxSection = section
 		}
 	}
-	return &httpStats{ts: ts,
+	return &httpStats{ts: ts, unsuccessfulReqs: badHits,
 		topHits: []topHitStat{{section: maxSection, hits: strconv.Itoa(maxHits)}}}
 
 }
