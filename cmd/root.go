@@ -64,8 +64,7 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// setup source and pass the params to it
-	logSource := newCsvLogSource(filereader)
-	// setup sink to be the log writers
+	logSource := NewCSVLogSource(filereader)
 
 	//setup and start the pipeline using source as source
 	httpLogMonitor := NewPipeline(

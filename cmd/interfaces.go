@@ -40,15 +40,3 @@ type Source interface {
 type Stage interface {
 	Run(StageParams)
 }
-
-// SinkParams represents channel configuration
-// for a pipeline's sink.
-type SinkParams interface {
-	Input() <-chan Payload
-}
-
-// Sink represents actions that can be performed
-// by a pipeline's sink.
-type Sink interface {
-	Write(SinkParams)
-}

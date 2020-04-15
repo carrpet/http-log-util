@@ -16,16 +16,18 @@ const (
 	numBytes = iota
 )
 
-//logReader implements Source interface
-type csvLogSource struct {
+// CSVLogSource implements csv file data source
+// for a pipeline
+type CSVLogSource struct {
 	csvReader *csv.Reader
 }
 
-func newCsvLogSource(log io.Reader) *csvLogSource {
-	return &csvLogSource{
+// NewCSVLogSource takes a source reader and returns
+// a CSV reader.
+func NewCSVLogSource(log io.Reader) *CSVLogSource {
+	return &CSVLogSource{
 		csvReader: csv.NewReader(log),
 	}
-
 }
 
 type csvLogSourceParams struct {
@@ -34,16 +36,12 @@ type csvLogSourceParams struct {
 }
 
 func (p *csvLogSourceParams) Output() chan<- Payload { return p.outChan }
+func (p *csvLogSourceParams) Error() chan<- error    { return p.errChan }
 
-func (p *csvLogSourceParams) Error() chan<- error { return p.errChan }
-
-type sinkParams struct {
-	inChan <-chan Payload
-}
-
-func (p *sinkParams) Input() <-chan Payload { return p.inChan }
-
-func (l *csvLogSource) Data(s SourceParams) {
+// Data loops through the CSV designed by the
+// CSVLogSource and sends it through the output channel
+// designated by the SourceParams
+func (l *CSVLogSource) Data(s SourceParams) {
 
 	//expect to read the header
 	_, err := l.csvReader.Read()
