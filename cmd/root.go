@@ -10,14 +10,14 @@ import (
 
 var (
 	rootCmd = &cobra.Command{
-		Use:   "httprequestutil",
-		Short: "HttpRequestUtil is a CLI utility to monitor http log files",
+		Use:   "httpmonitorutil",
+		Short: "HttpMonitorUtil is a CLI utility to monitor http log files",
 		Long: `A CLI utility to monitor http log files and gather metrics and useful 
 				statistics about them.`,
 		Args: argValidator,
 		RunE: monitorCmd,
 	}
-	logFile string
+	alertThresholdSec int
 )
 
 // Execute implements cobra's pattern for executing the command.
@@ -29,7 +29,8 @@ func Execute() {
 }
 
 func init() {
-
+	rootCmd.PersistentFlags().IntVar(&alertThresholdSec, "alertThreshold", 10,
+		"Defines the threshold in requests per seconds for which request volume alerts should fire")
 }
 
 func argValidator(cmd *cobra.Command, args []string) error {
@@ -46,15 +47,12 @@ func argValidator(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// main routine to ingest log file and calculate and write
-// metrics info
+// monitorCmd is the main routine to ingest an http log file
+// and create and start a pipeline to write metrics and send alerts
 func monitorCmd(cmd *cobra.Command, args []string) error {
 
-	//TODO: get user configured alert params
-	alertThresholdPerSec := 10
+	// hard coded params for the pipeline
 	alertFrequencySec := 120
-
-	// params to configure the log intervals
 	logIntervalSec := 10
 
 	// open up log file for reading
@@ -66,12 +64,12 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 	// setup source and pass the params to it
 	logSource := NewCSVLogSource(filereader)
 
-	//setup and start the pipeline using source as source
+	//setup and start the pipeline using csv file as source
 	httpLogMonitor := NewPipeline(
 		NewFanOutStage(
 			[]Transformer{newRequestVolumeProcessor(), newHTTPStatsProcessor()},
 			logIntervalSec),
-		newStage(newAlertOutputProcessor(alertThresholdPerSec), alertFrequencySec))
+		newStage(newAlertOutputProcessor(alertThresholdSec), alertFrequencySec))
 
 	statsCh := make(chan Payload)
 	sinkCh, _ := httpLogMonitor.Start(logSource, statsCh)
@@ -83,6 +81,7 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 			stat.Write(os.Stdout)
 		}
 	}()
+
 	writeAlerts(sinkCh, os.Stdout)
 
 	return nil
