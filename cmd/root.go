@@ -20,6 +20,7 @@ var (
 	logFile string
 )
 
+// Execute implements cobra's pattern for executing the command.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -73,11 +74,7 @@ func monitorCmd(cmd *cobra.Command, args []string) error {
 
 	sinkCh, _ := httpLogMonitor.Start(logSource)
 
-	for range sinkCh {
-		// TODO: handle the sink items here
+	writeAlerts(sinkCh, os.Stdout)
 
-	}
-	//	alertFrequency: alertFrequencySec}
-	//alertCfg.requestVolumeAlert(requestVolChan, os.Stdout)
 	return nil
 }
